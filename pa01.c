@@ -14,23 +14,27 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    FILE *file;
-    char* filename = malloc(strlen(argv[1])*sizeof(char) + 1);
+    //-- Throw error for invalid checksum
     int checksumSize = atoi(argv[2]);
+    if(checksumSize != 8 && checksumSize != 16 && checksumSize != 32){
+        fprintf(stderr, "Valid checksum sizes are 8, 16, or 32\n"); 
+        return 1;
+    }
 
-    //-- Open file from argv 1    
+    //-- Open file from argv 1   
+    FILE *file;
+ 
     file = fopen(argv[1], "r");
     if (file == NULL) {
         fprintf(stderr, "Invalid file name.");
         return 1;
     }
 
-
     //-- Get size of file
     // Send cursor to end, then ftell
     fseek(file, 0, SEEK_END);
-    unsigned int fileSize = (unsigned int)ftell(file) - 1;
-    printf("fS:%u\n", fileSize);
+    unsigned int fileSize = (unsigned int)ftell(file);
+    //printf("fS:%u\n", fileSize);
     // Return cursor to start
     fseek(file, 0, SEEK_SET);
     
@@ -38,19 +42,20 @@ int main(int argc, char *argv[])
     //-- Calculate padding requirement
     // Calculate num of characters loaded into checksum word.
     unsigned int charCount = checksumSize/8;
-    printf("cC:%u\n", charCount);
+    //printf("cC:%u\n", charCount);
     // Calculate padding. 
     unsigned int remainder = fileSize % charCount;
     unsigned int paddingCount = (remainder) ? charCount - remainder : 0;
-    printf("pC:%u\n", paddingCount);
+    //printf("pC:%u\n", paddingCount);
 
 
     //-- Move chars into checksum, then store in list
     unsigned int checksumListSize = (unsigned int)(ceil((double)fileSize/charCount));
-    printf("lS:%d\n", checksumListSize);
+    //printf("lS:%d\n", checksumListSize);
     unsigned int* checksumList[checksumListSize];
     unsigned int* checksum;
-    int loopCount, inCount = fileSize;
+    unsigned char curr;
+    int loopCount, inCount = fileSize, printCount = 0;
     // Loop for each word
     for(int i = 0; i < checksumListSize; i++) {
         checksum = malloc(sizeof(unsigned int));
@@ -67,18 +72,48 @@ int main(int argc, char *argv[])
                 *  checksum                            next char     result       
                 *  0b00000000000000000000000000000000  01011000 ---> 0b01011000000000000000000000000000
                 *  0b01011000000000000000000000000000  01011001 ---> 0b01011000010110010000000000000000   */
-                *checksum = *checksum | ((unsigned char)fgetc(file) << (loopCount-1)*8);
+                curr = (unsigned char)fgetc(file);
+                if(!(printCount%80)) printf("\n");
+                if(curr == '\n') printf("\\n");
+                printf("%c", curr);
+                printCount++;
+                *checksum = *checksum | (curr << (loopCount-1)*8);
                 inCount--;
-                printf("%d-%.*b\n",loopCount, checksumSize, *checksum);
+                //printf("-%.*b\n", checksumSize, *checksum);
             }
             // After using all chars, push padding into checksum
             else {
                 *checksum = *checksum | (unsigned char)'X' << (loopCount-1) * 8;
-                printf("%d-%.*b\n",loopCount, checksumSize, *checksum);
+                //printf("-%.*b\n", checksumSize, *checksum);
             }
         }
         checksumList[i] = checksum;
     }
+    //printf("\n");
+
+    
+    //-- Bitwise add words, ignore overflow
+    unsigned int current = *checksumList[0];
+    //printf("%d-%.*b\n",0, checksumSize, current);
+    for(int i = 1; i < checksumListSize; i++)
+    {
+        current += *checksumList[i];
+        // If less than 32bit, handle overflow.
+        if(checksumSize==8) current = current & 255;
+        else if(checksumSize==16) current = current & 65535;
+        // Otherwise, unsigned int ignores 32bit overflow
+        //printf("%d-%.*b\n",i, checksumSize, current);
+    }
+    
+
+    //-- Find Two's complement. 
+    //current = ~current + 1;
+    //if(checksumSize==8) current = current & 255;
+    //else if(checksumSize==16) current = current & 65535;
+    //printf("2\'s-%.*b\n", checksumSize, current);
+    printf("%2d bit checksum is %x for all %d chars\n", checksumSize, current, fileSize);
+
+    //-- Interpret value then append to end.
 
     fclose(file);
     return 0;
