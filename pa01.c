@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 int main(int argc, char *argv[])
 {
@@ -48,7 +47,12 @@ int main(int argc, char *argv[])
 
 
     //-- Move chars into checksum, then store in list
-    unsigned int checksumListSize = (unsigned int)(ceil((double)fileSize/charCount));
+
+    //Find minimum word count. Round up.
+    double roundPrecise = (double)fileSize/charCount;
+    int roundImprecise = fileSize/charCount;
+    if(roundPrecise > (double)roundImprecise) roundImprecise += 1;
+    unsigned int checksumListSize = (unsigned int)roundImprecise;
     //printf("lS:%d\n", checksumListSize);
     unsigned int* checksumList[checksumListSize];
     unsigned int* checksum;
