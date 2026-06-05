@@ -22,11 +22,9 @@ int main(int argc, char *argv[])
     }
 
     //-- Open file from argv 1   
-    FILE *file;
- 
-    file = fopen(argv[1], "r");
+    FILE* file = fopen(argv[1], "r");
     if (file == NULL) {
-        fprintf(stderr, "Invalid file name.");
+        fprintf(stderr, "Invalid file name.\n");
         return 1;
     }
 
@@ -74,7 +72,7 @@ int main(int argc, char *argv[])
                 *  0b01011000000000000000000000000000  01011001 ---> 0b01011000010110010000000000000000   */
                 curr = (unsigned char)fgetc(file);
                 if(!(printCount%80)) printf("\n");
-                if(curr == '\n') printf("\\n");
+                //if(curr == '\n') printf("\\n");
                 printf("%c", curr);
                 printCount++;
                 *checksum = *checksum | (curr << (loopCount-1)*8);
@@ -84,12 +82,15 @@ int main(int argc, char *argv[])
             // After using all chars, push padding into checksum
             else {
                 *checksum = *checksum | (unsigned char)'X' << (loopCount-1) * 8;
+                printCount++;
                 //printf("-%.*b\n", checksumSize, *checksum);
             }
         }
         checksumList[i] = checksum;
     }
-    //printf("\n");
+    for(int i = 0; i < paddingCount; i++) printf("X");
+    fileSize += paddingCount;
+    printf("\n");
 
     
     //-- Bitwise add words, ignore overflow
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
     //if(checksumSize==8) current = current & 255;
     //else if(checksumSize==16) current = current & 65535;
     //printf("2\'s-%.*b\n", checksumSize, current);
-    printf("%2d bit checksum is %x for all %d chars\n", checksumSize, current, fileSize);
+    printf("%2d bit checksum is %8x for all %4d chars\n", checksumSize, current, fileSize);
 
     //-- Interpret value then append to end.
 
