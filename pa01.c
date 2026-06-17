@@ -9,21 +9,21 @@ int main(int argc, char *argv[])
 {
     //-- Check if valid number of arguments is given.
     if (argc != 3) {
-        fprintf(stderr, "Invalid args:\n\tpa01.c <filename> <checksum>\n", argv[0]);
+        fprintf(stderr, "Invalid args: pa01.c <filename> <checksum>");
         return 1;
     }
 
     //-- Throw error for invalid checksum
     int checksumSize = atoi(argv[2]);
     if(checksumSize != 8 && checksumSize != 16 && checksumSize != 32){
-        fprintf(stderr, "Valid checksum sizes are 8, 16, or 32\n"); 
+        fprintf(stderr, "Valid checksum sizes are 8, 16, or 32"); 
         return 1;
     }
 
     //-- Open file from argv 1   
     FILE* file = fopen(argv[1], "r");
     if (file == NULL) {
-        fprintf(stderr, "Invalid file name.\n");
+        fprintf(stderr, "Invalid file name.");
         return 1;
     }
 
